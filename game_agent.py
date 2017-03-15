@@ -22,10 +22,6 @@ def heuristic_function_second(game, player):
     return float(len(game.get_legal_moves(player)) - 2 * len(game.get_legal_moves(game.get_opponent(player))))
 
 
-def heuristic_function_first(game, player):
-    return float(len(game.get_legal_moves(player)) - len(game.get_legal_moves(game.get_opponent(player))))
-
-
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
