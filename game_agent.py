@@ -14,12 +14,23 @@ class Timeout(Exception):
     pass
 
 
+def get_moves(game, player):
+    return len(game.get_legal_moves(player)), len(game.get_legal_moves(game.get_opponent(player)))
+
+
 def heuristic_function_first(game, player):
-    return float(len(game.get_legal_moves(player)) - len(game.get_legal_moves(game.get_opponent(player))))
+    player_moves, oppo_moves = get_moves(game, player)
+    return float(player_moves - oppo_moves)
 
 
 def heuristic_function_second(game, player):
-    return float(len(game.get_legal_moves(player)) - 2 * len(game.get_legal_moves(game.get_opponent(player))))
+    player_moves, oppo_moves = get_moves(game, player)
+    return float(player_moves*2 - oppo_moves)
+
+
+def heuristic_function_third(game, player):
+    player_moves, oppo_moves = get_moves(game, player)
+    return float(player_moves + oppo_moves + game.move_count)
 
 
 def custom_score(game, player):
@@ -46,7 +57,13 @@ def custom_score(game, player):
     """
 
     # TODO: finish this function!
-    return heuristic_function_second(game, player)
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    return heuristic_function_first(game, player)
 
 
 class CustomPlayer:
@@ -158,10 +175,12 @@ class CustomPlayer:
                     else:
                         raise NotImplementedError
                     depth += 1
-            return move
+                    if time_left() <= self.TIMER_THRESHOLD:
+                        return move
         except Timeout:
             # Handle any actions required at timeout, if necessary
-            return move
+            pass
+        return move
 
     def minimax(self, game, depth, maximizing_player=True):
         """Implement the minimax search algorithm as described in the lectures.
@@ -198,24 +217,22 @@ class CustomPlayer:
             raise Timeout()
 
         # TODO: finish this function!
-        best_score = float('-inf') if maximizing_player else float('inf')
-        best_move = (-1, -1)
-        player = game.active_player if maximizing_player else game.inactive_player
+        if not game.get_legal_moves():
+            return self.score(game, self), (-1, -1)
 
-        if depth == 0:
-            return self.score(game, player), best_move
+        children = []
+        for move in game.get_legal_moves():
+            forecast_state = game.forecast_move(move)
+            if depth > 1:
+                score = self.minimax(forecast_state, depth - 1, not maximizing_player)[0]
+            else:
+                score = self.score(forecast_state, self)
+            children.append((score,move))
 
-        for move in game.get_legal_moves(game.active_player):
-            forecast_game = game.forecast_move(move)
-            forecast_score, _ = self.minimax(forecast_game, depth - 1, not maximizing_player)
-            if maximizing_player and forecast_score > best_score:
-                best_score = forecast_score
-                best_move = move
-            if (not maximizing_player) and forecast_score < best_score:
-                best_score = forecast_score
-                best_move = move
-
-        return best_score, best_move
+        if maximizing_player:
+            return max(children)
+        else:
+            return min(children)
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -259,26 +276,50 @@ class CustomPlayer:
             raise Timeout()
 
         # TODO: finish this function!
-        best_score = float('-inf') if maximizing_player else float('inf')
-        best_move = (-1, -1)
-        player = game.active_player if maximizing_player else game.inactive_player
+        # best_score = float('-inf') if maximizing_player else float('inf')
+        # best_move = (-1, -1)
+        # player = game.active_player if maximizing_player else game.inactive_player
+        #
+        # if depth == 0:
+        #     return self.score(game, player), best_move
+        #
+        # for move in game.get_legal_moves(game.active_player):
+        #     forecast_game = game.forecast_move(move)
+        #     forecast_score, _ = self.alphabeta(forecast_game, depth - 1, alpha, beta, not maximizing_player)
+        #     if maximizing_player and forecast_score > best_score:
+        #         best_score = forecast_score
+        #         best_move = move
+        #         if forecast_score >= beta:
+        #             break
+        #         alpha = max(alpha, forecast_score)
+        #     if (not maximizing_player) and forecast_score < best_score:
+        #         best_score = forecast_score
+        #         best_move = move
+        #         if forecast_score <= alpha:
+        #             break
+        #         beta = min(beta, forecast_score)
+        # return best_score, best_move
+        if not game.get_legal_moves():
+            return self.score(game, self), (-1, -1)
 
-        if depth == 0:
-            return self.score(game, player), best_move
+        children = []
+        for move in game.get_legal_moves():
+            forecast_state = game.forecast_move(move)
+            if depth > 1:
+                score = self.alphabeta(forecast_state, depth - 1, alpha, beta, not maximizing_player)[0]
+            else:
+                score = self.score(forecast_state, self)
+            children.append((score, move))
+            if maximizing_player:
+                alpha = max(alpha, score)
+                if beta <= alpha:
+                    break  # Beta cut off
+            else:
+                beta = min(beta, score)
+                if beta <= alpha:
+                    break  # Alpha cut off
 
-        for move in game.get_legal_moves(game.active_player):
-            forecast_game = game.forecast_move(move)
-            forecast_score, _ = self.alphabeta(forecast_game, depth - 1, alpha, beta, not maximizing_player)
-            if maximizing_player and forecast_score > best_score:
-                best_score = forecast_score
-                best_move = move
-                if forecast_score >= beta:
-                    break
-                alpha = max(alpha, forecast_score)
-            if (not maximizing_player) and forecast_score < best_score:
-                best_score = forecast_score
-                best_move = move
-                if forecast_score <= alpha:
-                    break
-                beta = min(beta, forecast_score)
-        return best_score, best_move
+        if maximizing_player:
+            return max(children)
+        else:
+            return min(children)

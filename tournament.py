@@ -31,9 +31,10 @@ from sample_players import null_score
 from sample_players import open_move_score
 from sample_players import improved_score
 from game_agent import CustomPlayer
-from game_agent import custom_score
+
 from game_agent import heuristic_function_first
 from game_agent import heuristic_function_second
+from game_agent import heuristic_function_third
 
 NUM_MATCHES = 5  # number of matches against each opponent
 TIME_LIMIT = 150  # number of milliseconds before timeout
@@ -164,7 +165,8 @@ def main():
     # faster or slower computers.
     test_agents = [Agent(CustomPlayer(score_fn=improved_score, **CUSTOM_ARGS), "ID_Improved"),
                    Agent(CustomPlayer(score_fn=heuristic_function_first, **CUSTOM_ARGS), "heuristic_function_first"),
-                   Agent(CustomPlayer(score_fn=heuristic_function_second, **CUSTOM_ARGS), "heuristic_function_second")
+                   Agent(CustomPlayer(score_fn=heuristic_function_second, **CUSTOM_ARGS), "heuristic_function_second"),
+                   Agent(CustomPlayer(score_fn=heuristic_function_third, **CUSTOM_ARGS), "heuristic_function_third")
                    ]
 
     print(DESCRIPTION)
